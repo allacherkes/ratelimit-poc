@@ -1,0 +1,15 @@
+apiVersion: v1
+data:
+  config.yaml: |
+    domain: custom
+    descriptors:
+      - key: generic_key
+        rate_limit:
+          unit: minute
+          requests_per_unit: 5
+        value: per-minute
+kind: ConfigMap
+metadata:
+  name: oss-rate-limit-config
+  namespace: gloo-system
+
