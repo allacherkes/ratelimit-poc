@@ -1,0 +1,97 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+  uid: 38482785-d70f-44e8-b905-aa69137f5499
+  resourceVersion: '166986'
+  generation: 1
+  creationTimestamp: '2022-05-10T09:29:05Z'
+  labels:
+    app: gloo
+    app.kubernetes.io/managed-by: Helm
+    gateway-proxy-id: gateway-proxy
+    gloo: gateway-proxy
+  annotations:
+    deployment.kubernetes.io/revision: '1'
+    meta.helm.sh/release-name: gloo
+    meta.helm.sh/release-namespace: gloo-system
+  selfLink: /apis/apps/v1/namespaces/gloo-system/deployments/gateway-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gateway-proxy-id: gateway-proxy
+      gloo: gateway-proxy
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        gateway-proxy: live
+        gateway-proxy-id: gateway-proxy
+        gloo: gateway-proxy
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: '8081'
+        prometheus.io/scrape: 'true'
+    spec:
+      volumes:
+        - name: envoy-config
+          configMap:
+            name: gateway-proxy-envoy-config
+            defaultMode: 420
+      containers:
+        - name: gateway-proxy
+          image: 'quay.io/solo-io/gloo-ee-envoy-wrapper:1.11.8'
+          args:
+            - '--disable-hot-restart'
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          resources: {}
+          volumeMounts:
+            - name: envoy-config
+              mountPath: /etc/envoy
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 10101
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      serviceAccountName: gateway-proxy
+      serviceAccount: gateway-proxy
+      securityContext:
+        runAsUser: 10101
+        fsGroup: 10101
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
