@@ -1,0 +1,56 @@
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  annotations:
+    meta.helm.sh/release-name: gloo
+    meta.helm.sh/release-namespace: gloo-system
+  creationTimestamp: "2022-04-04T09:51:17Z"
+  generation: 5
+  labels:
+    app: gloo
+    app.kubernetes.io/managed-by: Helm
+    gloo: settings
+  name: default
+  namespace: gloo-system
+  resourceVersion: "1651567"
+  uid: bb3f2891-6caa-489a-9ff7-e64dd8585128
+spec:
+  discovery:
+    fdsMode: WHITELIST
+  discoveryNamespace: gloo-system
+  extauth:
+    extauthzServerRef:
+      name: extauth
+      namespace: gloo-system
+    transportApiVersion: V3
+    userIdHeader: x-user-id
+  gateway:
+    readGatewaysFromAllNamespaces: false
+    validation:
+      allowWarnings: true
+      alwaysAccept: true
+      disableTransformationValidation: false
+      proxyValidationServerAddr: gloo:9988
+      validationServerGrpcMaxSizeBytes: 4000000
+      warnRouteShortCircuiting: false
+  gloo:
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    enableRestEds: false
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+        should run `glooctl check` to find and fix config errors.
+      invalidRouteResponseCode: 404
+      replaceInvalidRoutes: false
+    restXdsBindAddr: 0.0.0.0:9976
+    xdsBindAddr: 0.0.0.0:9977
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  ratelimitServer:
+    rateLimitBeforeAuth: false
+    ratelimitServerRef:
+      # rattelimit upstream 
+      name: oss-rate-limit
+      namespace: gloo-system
+
