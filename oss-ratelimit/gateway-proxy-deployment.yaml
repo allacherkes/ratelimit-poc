@@ -1,57 +1,50 @@
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: gateway-proxy
-  namespace: gloo-system
-  uid: 38482785-d70f-44e8-b905-aa69137f5499
-  resourceVersion: '166986'
-  generation: 1
-  creationTimestamp: '2022-05-10T09:29:05Z'
+  annotations:
+    deployment.kubernetes.io/revision: "4"
+    meta.helm.sh/release-name: gloo
+    meta.helm.sh/release-namespace: gloo-system
+  generation: 5
   labels:
     app: gloo
     app.kubernetes.io/managed-by: Helm
     gateway-proxy-id: gateway-proxy
     gloo: gateway-proxy
-  annotations:
-    deployment.kubernetes.io/revision: '1'
-    meta.helm.sh/release-name: gloo
-    meta.helm.sh/release-namespace: gloo-system
-  selfLink: /apis/apps/v1/namespaces/gloo-system/deployments/gateway-proxy
+  name: gateway-proxy
+  namespace: gloo-system
+  resourceVersion: "285881"
+  uid: 38482785-d70f-44e8-b905-aa69137f5499
 spec:
+  progressDeadlineSeconds: 600
   replicas: 1
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       gateway-proxy-id: gateway-proxy
       gloo: gateway-proxy
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
   template:
     metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.io/scrape: "true"
       creationTimestamp: null
       labels:
         gateway-proxy: live
         gateway-proxy-id: gateway-proxy
         gloo: gateway-proxy
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: '8081'
-        prometheus.io/scrape: 'true'
     spec:
-      volumes:
-        - name: envoy-config
-          configMap:
-            name: gateway-proxy-envoy-config
-            defaultMode: 420
       containers:
-        - name: gateway-proxy
-          image: 'quay.io/solo-io/gloo-ee-envoy-wrapper:1.11.8'
-          args:
-            - '--disable-hot-restart'
-          ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
-            - name: https
-              containerPort: 8443
-              protocol: TCP
+        - args:
+            - --disable-hot-restart
+            - --log-level
+            - debug
           env:
             - name: POD_NAMESPACE
               valueFrom:
@@ -63,35 +56,45 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.name
-          resources: {}
-          volumeMounts:
-            - name: envoy-config
-              mountPath: /etc/envoy
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
+          image: quay.io/solo-io/gloo-ee-envoy-wrapper:1.11.8
           imagePullPolicy: IfNotPresent
+          name: gateway-proxy
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 8443
+              name: https
+              protocol: TCP
+          resources: {}
           securityContext:
+            allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
-            runAsUser: 10101
-            runAsNonRoot: true
-            readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: false
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 30
+            readOnlyRootFilesystem: false
+            runAsUser: 0
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/envoy
+              name: envoy-config
+            - mountPath: /shared-socket
+              name: shared-socket
       dnsPolicy: ClusterFirst
-      serviceAccountName: gateway-proxy
-      serviceAccount: gateway-proxy
-      securityContext:
-        runAsUser: 10101
-        fsGroup: 10101
+      restartPolicy: Always
       schedulerName: default-scheduler
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
-  revisionHistoryLimit: 10
-  progressDeadlineSeconds: 600
+      securityContext: {}
+      serviceAccount: gateway-proxy
+      serviceAccountName: gateway-proxy
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: gateway-proxy-envoy-config
+          name: envoy-config
+        - hostPath:
+            path: /shared-socket
+            type: ""
+          name: shared-socket
 

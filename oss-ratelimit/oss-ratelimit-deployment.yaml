@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       annotations:
-        kubectl.kubernetes.io/restartedAt: "2022-05-10T09:58:49+03:00"
+        kubectl.kubernetes.io/restartedAt: "2022-05-16T15:21:08Z"
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
@@ -29,62 +29,69 @@ spec:
         gloo: oss-rate-limit
     spec:
       containers:
-      - command:
-        - /bin/ratelimit
-        env:
-        - name: GRPC_PORT
-          value: "18081"
-        - name: USE_STATSD
-          value: "false"
-        - name: REDIS_URL
-          value: redis:6379
-        - name: REDIS_SOCKET_TYPE
-          value: tcp
-        - name: REDIS_AUTH
-          valueFrom:
-            secretKeyRef:
-              key: redis-password
-              name: redis
-        - name: LOG_LEVEL
-          value: debug
-        - name: RUNTIME_ROOT
-          value: /data
-        - name: RUNTIME_SUBDIRECTORY
-          value: ratelimit
-        - name: RUNTIME_WATCH_ROOT
-          value: "false"
-        - name: RUNTIME_IGNOREDOTFILES
-          value: "true"
-        image: envoyproxy/ratelimit:5b6e65da
-        imagePullPolicy: IfNotPresent
-        name: oss-rate-limit
-        readinessProbe:
-          failureThreshold: 2
-          httpGet:
-            path: /healthcheck
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 2
-          periodSeconds: 5
-          successThreshold: 1
-          timeoutSeconds: 1
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /data/ratelimit/config
-          name: oss-rate-limit-config
+        - command:
+            - /bin/ratelimit
+          env:
+            - name: GRPC_PORT
+              value: "18081"
+            - name: USE_STATSD
+              value: "false"
+            - name: REDIS_URL
+              value: redis:6379
+            - name: REDIS_SOCKET_TYPE
+              value: tcp
+            - name: REDIS_AUTH
+              valueFrom:
+                secretKeyRef:
+                  key: redis-password
+                  name: redis
+            - name: LOG_LEVEL
+              value: debug
+            - name: RUNTIME_ROOT
+              value: /data
+            - name: RUNTIME_SUBDIRECTORY
+              value: ratelimit
+            - name: RUNTIME_WATCH_ROOT
+              value: "false"
+            - name: RUNTIME_IGNOREDOTFILES
+              value: "true"
+          image: allasap/rate-limit:0.0.4
+          imagePullPolicy: IfNotPresent
+          name: oss-rate-limit
+          readinessProbe:
+            failureThreshold: 2
+            httpGet:
+              path: /healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {}
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /data/ratelimit/config
+              name: oss-rate-limit-config
+            - mountPath: /shared-socket
+              name: shared-socket
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10101
+      securityContext: {}
       serviceAccount: oss-rate-limit
       serviceAccountName: oss-rate-limit
       terminationGracePeriodSeconds: 30
       volumes:
-      - configMap:
-          defaultMode: 420
+        - configMap:
+            defaultMode: 420
+            name: oss-rate-limit-config
           name: oss-rate-limit-config
-        name: oss-rate-limit-config
+        - hostPath:
+            path: /shared-socket
+            type: ""
+          name: shared-socket

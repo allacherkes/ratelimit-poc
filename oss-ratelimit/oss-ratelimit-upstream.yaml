@@ -9,16 +9,12 @@ metadata:
   namespace: gloo-system
 spec:
   healthChecks:
-  - grpcHealthCheck:
-      serviceName: ratelimit
-    healthyThreshold: 5
-    interval: 60s
-    timeout: 5s
-    unhealthyThreshold: 5
-  kube:
-    serviceName: oss-rate-limit
-    serviceNamespace: gloo-system
-    servicePort: 18081
-    serviceSpec:
-      grpc: {}
-
+    - grpcHealthCheck:
+        serviceName: ratelimit
+      healthyThreshold: 5
+      interval: 60s
+      timeout: 5s
+      unhealthyThreshold: 5
+  pipe:
+    path: /shared-socket/.sock
+  useHttp2: true
